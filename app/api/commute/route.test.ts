@@ -2,6 +2,8 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET } from "./route";
 
+type GeminiMode = "success" | "fail";
+
 function isoHours(count = 11): string[] {
   return Array.from(
     { length: count },
@@ -16,6 +18,7 @@ function fill(count: number, value: number): number[] {
 interface MockOpts {
   forecastStatus?: number;
   airStatus?: number;
+  gemini?: GeminiMode;
 }
 
 function mockOpenMeteo(opts: MockOpts = {}) {
@@ -38,6 +41,16 @@ function mockOpenMeteo(opts: MockOpts = {}) {
   };
   return vi.fn(async (url: string | URL) => {
     const u = String(url);
+    if (u.includes("generativelanguage")) {
+      if (opts.gemini === "fail") {
+        return new Response("upstream error", { status: 500 });
+      }
+      const text = JSON.stringify({ title: "AI 칭호", narrative: "AI 서사입니다." });
+      return new Response(
+        JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }),
+        { status: 200 },
+      );
+    }
     if (u.includes("air-quality")) {
       return new Response(JSON.stringify(airBody), { status: opts.airStatus ?? 200 });
     }
@@ -56,6 +69,7 @@ function request(city: string | null) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("GET /api/commute", () => {
@@ -91,5 +105,39 @@ describe("GET /api/commute", () => {
     const body = await res.json();
     expect(body.score).toBeUndefined();
     expect(body.error).toBeTruthy();
+  });
+
+  it("Gemini 성공 → title·narrative가 AI 값, source=ai", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubGlobal("fetch", mockOpenMeteo({ gemini: "success" }));
+    const res = await GET(request("seoul"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.title).toBe("AI 칭호");
+    expect(body.narrative).toBe("AI 서사입니다.");
+    expect(body.source).toBe("ai");
+  });
+
+  it("Gemini 실패 → 점수 정상 + fallback 칭호, source=fallback, 에러 문구 없음", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubGlobal("fetch", mockOpenMeteo({ gemini: "fail" }));
+    const res = await GET(request("seoul"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.score).toBe(43);
+    expect(body.source).toBe("fallback");
+    expect(body.title).toBeTruthy();
+    expect(body.narrative).toBeTruthy();
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain("에러");
+    expect(serialized).not.toContain("실패");
+  });
+
+  it("GEMINI_API_KEY 미설정 → 200, source=fallback", async () => {
+    vi.stubGlobal("fetch", mockOpenMeteo());
+    const res = await GET(request("seoul"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.source).toBe("fallback");
   });
 });
