@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe: commute-mileage</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --w-bg: #f5f5f5;
+    --w-border: #ccc;
+    --w-text: #555;
+    --w-muted: #aaa;
+    --w-fill: #eee;
+  }
+
+  * {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    color: var(--w-text);
+  }
+
+  body { background: var(--w-bg); }
+
+  nav { position: sticky; top: 0; z-index: 40; background: var(--w-bg); border-bottom: 1px solid var(--w-border); }
+  nav button { cursor: pointer; font-size: 13px; }
+  nav button:hover { background: var(--w-fill); border-radius: 4px; }
+  nav button.active { font-weight: bold; border-bottom: 2px solid var(--w-text); }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .vp-toggle button {
+    font-size: 12px; padding: 2px 8px;
+    border: 1px solid var(--w-border); cursor: pointer; background: white;
+  }
+  .vp-toggle button:first-child { border-radius: 4px 0 0 4px; }
+  .vp-toggle button:last-child { border-radius: 0 4px 4px 0; border-left: none; }
+  .vp-toggle button.active { background: var(--w-text); color: white; }
+
+  body.viewport-mobile .screen-content {
+    max-width: 375px !important;
+    margin: 24px auto !important;
+    border: 2px solid var(--w-border);
+    border-radius: 24px;
+    min-height: 667px;
+    background: white;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 32px 16px !important;
+  }
+
+  .screen-notes {
+    background: #fffde7;
+    border-left: 3px solid #ffd54f;
+    padding: 12px 16px;
+    margin-top: 24px;
+    font-size: 13px;
+    border-radius: 0 4px 4px 0;
+  }
+  .screen-notes summary {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+    color: #b0a050;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .screen-notes p { margin: 6px 0 2px; color: #777; }
+  .screen-notes ul { margin: 4px 0 0 16px; padding: 0; color: #777; }
+  .screen-notes li { margin: 2px 0; }
+
+  /* feature-specific wireframe utilities */
+  .w-card {
+    border: 1.5px solid var(--w-border);
+    border-radius: 16px;
+    padding: 20px 18px;
+    background: white;
+  }
+  .w-score {
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--w-text);
+  }
+  .w-divider { border-top: 1px dashed var(--w-border); }
+  .w-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    border: 1px solid var(--w-border); border-radius: 999px;
+    padding: 2px 10px; font-size: 11px; color: var(--w-muted);
+  }
+  .w-cal {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .w-cal-cell {
+    aspect-ratio: 1 / 1;
+    border: 1px solid var(--w-border);
+    border-radius: 6px;
+    padding: 4px;
+    font-size: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: white;
+  }
+  .w-cal-cell.empty { background: var(--w-fill); border-color: var(--w-fill); }
+  .w-cal-cell .cell-day { color: var(--w-muted); font-size: 10px; }
+  .w-cal-cell .cell-label { color: var(--w-text); font-size: 9px; line-height: 1.1; }
+  .w-toast {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: 40px;
+    background: var(--w-text); color: white !important;
+    padding: 8px 14px; border-radius: 999px;
+    font-size: 12px;
+  }
+  .w-toast * { color: white !important; }
+  .w-btn {
+    border: 1.5px solid var(--w-border);
+    background: white;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .w-btn-primary {
+    background: var(--w-text);
+    border-color: var(--w-text);
+    color: white !important;
+  }
+  .w-btn-primary * { color: white !important; }
+  .w-select {
+    width: 100%;
+    border: 1.5px solid var(--w-border);
+    background: white;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .w-error {
+    border: 1.5px dashed var(--w-border);
+    background: white;
+    border-radius: 16px;
+    padding: 28px 18px;
+    text-align: center;
+  }
+  .w-tab-bar {
+    border-top: 1px solid var(--w-border);
+    padding-top: 12px;
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .w-tab-bar button {
+    background: transparent;
+    border: 0;
+    padding: 8px 0;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .w-tab-bar button.active {
+    background: var(--w-fill);
+    font-weight: bold;
+    color: var(--w-text);
+  }
+  .screen-content { position: relative; }
+</style>
+</head>
+<body class="p-0 m-0 viewport-mobile">
+
+<nav class="flex items-center gap-2 px-6 py-2 flex-wrap">
+  <span class="text-xs" style="color:var(--w-muted)">wireframe</span>
+  <button id="nav-0" onclick="show(0)" class="px-2 py-1">메인 (기본)</button>
+  <button id="nav-1" onclick="show(1)" class="px-2 py-1">마일리지</button>
+  <button id="nav-2" onclick="show(2)" class="px-2 py-1">메인 (초기)</button>
+  <button id="nav-3" onclick="show(3)" class="px-2 py-1">메인 (데이터 에러)</button>
+  <button id="nav-4" onclick="show(4)" class="px-2 py-1">메인 (AI fallback)</button>
+  <button id="nav-5" onclick="show(5)" class="px-2 py-1">메인 (공유 토스트)</button>
+  <div class="vp-toggle flex ml-auto">
+    <button id="vp-desktop" onclick="setViewport('desktop')">Desktop</button>
+    <button id="vp-mobile" onclick="setViewport('mobile')" class="active">Mobile</button>
+  </div>
+</nav>
+
+<!-- ───────────────────────────────────── -->
+<!-- Screen 0: 메인 (점수 카드 채워진 기본) -->
+<!-- ───────────────────────────────────── -->
+<div id="screen-0" class="screen" data-scenario="scenario-1, scenario-2, scenario-3">
+  <div class="screen-content @container max-w-6xl mx-auto p-6">
+
+    <h2 class="text-lg font-bold mb-5" style="color:var(--w-muted); border-bottom:1px solid var(--w-border); padding-bottom:8px;">
+      메인 — 오늘의 점수 카드
+    </h2>
+
+    <!-- header -->
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="text-base font-bold" style="color:var(--w-text)">출근 마일리지</div>
+        <div class="text-xs" style="color:var(--w-muted)">매일 출근을 채점하는 미니 RPG</div>
+      </div>
+      <span class="w-pill"><i data-lucide="calendar" class="w-3 h-3"></i> 2026.05.28</span>
+    </div>
+
+    <!-- city select -->
+    <div class="mb-4">
+      <div class="text-xs mb-1" style="color:var(--w-muted)">도시</div>
+      <button class="w-select">
+        <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> 서울</span>
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- score card -->
+    <div class="w-card">
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs" style="color:var(--w-muted)">오늘 난이도</span>
+        <span class="text-xs" style="color:var(--w-muted)">서울 · 2026.05.28</span>
+      </div>
+      <div class="w-score mb-3">47</div>
+      <div class="w-divider mb-3"></div>
+      <div class="text-lg font-bold mb-2" style="color:var(--w-text)">안개 속의 검객</div>
+      <div class="text-sm leading-relaxed" style="color:var(--w-muted)">
+        희뿌연 미세먼지를 가르며 7호선 환승역의 인파를 헤쳐, 그대는 오늘도 책상이라는 성에 다다랐다.
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button class="w-btn w-btn-primary flex-1"><i data-lucide="share-2" class="w-3.5 h-3.5"></i> 카드 공유</button>
+        <button class="w-btn"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>
+
+    <!-- environment ribbon -->
+    <div class="mt-4">
+      <div class="text-xs mb-2" style="color:var(--w-muted)">오늘의 적군 (07:00~10:00 평균)</div>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="w-pill"><i data-lucide="wind" class="w-3 h-3"></i> PM2.5 47</span>
+        <span class="w-pill"><i data-lucide="cloud-rain" class="w-3 h-3"></i> 강수 0mm</span>
+        <span class="w-pill"><i data-lucide="zap" class="w-3 h-3"></i> 풍속 3m/s</span>
+        <span class="w-pill"><i data-lucide="sun" class="w-3 h-3"></i> UV 4</span>
+        <span class="w-pill"><i data-lucide="bell" class="w-3 h-3"></i> 특보 없음</span>
+      </div>
+    </div>
+
+    <!-- bottom nav -->
+    <div class="w-tab-bar">
+      <button class="active"><i data-lucide="home" class="w-4 h-4"></i> 오늘</button>
+      <button><i data-lucide="calendar-days" class="w-4 h-4"></i> 마일리지</button>
+    </div>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>메인 화면 — 도시 선택 후 점수 카드 노출. 시나리오 1·2·3의 visual base.</p>
+        <ul>
+          <li>트리거: 사용자가 메인 페이지에 진입하고 (a) 누적 기록에 따라 마지막 도시 자동 선택 또는 (b) 도시 드롭다운에서 한 곳 선택</li>
+          <li>인터랙션: "카드 공유" → 텍스트 클립보드 복사 / "마일리지" 탭 → 마일리지 화면 전환 / 새로고침 → 같은 날엔 동일 카드 노출</li>
+          <li>전환: "마일리지" 탭 클릭 시 캘린더 화면으로 이동. 도시 드롭다운 변경 시 미결정 항목(a/b/c) 기본은 점수 보존(a).</li>
+        </ul>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<!-- ───────────────────────────────────── -->
+<!-- Screen 1: 마일리지 (캘린더 + 통계) -->
+<!-- ───────────────────────────────────── -->
+<div id="screen-1" class="screen" data-scenario="scenario-4">
+  <div class="screen-content @container max-w-6xl mx-auto p-6">
+
+    <h2 class="text-lg font-bold mb-5" style="color:var(--w-muted); border-bottom:1px solid var(--w-border); padding-bottom:8px;">
+      마일리지 — 누적 기록
+    </h2>
+
+    <!-- header -->
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="text-base font-bold" style="color:var(--w-text)">나의 마일리지</div>
+        <div class="text-xs" style="color:var(--w-muted)">출근일마다 쌓인 칭호와 점수</div>
+      </div>
+      <button class="w-btn"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> 오늘로</button>
+    </div>
+
+    <!-- stats -->
+    <div class="grid grid-cols-2 gap-2 mb-4">
+      <div class="w-card text-center" style="padding: 16px 12px">
+        <div class="text-xs mb-1" style="color:var(--w-muted)">총 출근일</div>
+        <div class="text-2xl font-bold" style="color:var(--w-text)">12<span class="text-sm font-normal" style="color:var(--w-muted)">일</span></div>
+      </div>
+      <div class="w-card text-center" style="padding: 16px 12px">
+        <div class="text-xs mb-1" style="color:var(--w-muted)">누적 점수</div>
+        <div class="text-2xl font-bold" style="color:var(--w-text)">487<span class="text-sm font-normal" style="color:var(--w-muted)">점</span></div>
+      </div>
+    </div>
+
+    <!-- month header -->
+    <div class="flex items-center justify-between mb-2">
+      <button class="w-btn"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>
+      <div class="text-sm font-bold" style="color:var(--w-text)">2026년 5월</div>
+      <button class="w-btn"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
+    </div>
+
+    <!-- weekday labels -->
+    <div class="w-cal mb-1">
+      <div class="text-center text-xs" style="color:var(--w-muted)">일</div>
+      <div class="text-center text-xs" style="color:var(--w-muted)">월</div>
+      <div class="text-center text-xs" style="color:var(--w-muted)">화</div>
+      <div class="text-center text-xs" style="color:var(--w-muted)">수</div>
+      <div class="text-center text-xs" style="color:var(--w-muted)">목</div>
+      <div class="text-center text-xs" style="color:var(--w-muted)">금</div>
+      <div class="text-center text-xs" style="color:var(--w-muted)">토</div>
+    </div>
+
+    <!-- calendar -->
+    <div class="w-cal">
+      <!-- week 1: empty leading cells for 2026.05 starting Fri (assume) -->
+      <div class="w-cal-cell empty"></div>
+      <div class="w-cal-cell empty"></div>
+      <div class="w-cal-cell empty"></div>
+      <div class="w-cal-cell empty"></div>
+      <div class="w-cal-cell empty"></div>
+      <div class="w-cal-cell"><span class="cell-day">1</span><span class="cell-label">바람의 보행자</span></div>
+      <div class="w-cal-cell"><span class="cell-day">2</span><span class="cell-label">—</span></div>
+      <!-- week 2 -->
+      <div class="w-cal-cell"><span class="cell-day">3</span><span class="cell-label">—</span></div>
+      <div class="w-cal-cell"><span class="cell-day">4</span><span class="cell-label">햇살의 기수</span></div>
+      <div class="w-cal-cell"><span class="cell-day">5</span><span class="cell-label">햇살의 기수</span></div>
+      <div class="w-cal-cell"><span class="cell-day">6</span><span class="cell-label">먼지의 사관</span></div>
+      <div class="w-cal-cell"><span class="cell-day">7</span><span class="cell-label">먼지의 사관</span></div>
+      <div class="w-cal-cell"><span class="cell-day">8</span><span class="cell-label">소나기 견습</span></div>
+      <div class="w-cal-cell"><span class="cell-day">9</span><span class="cell-label">—</span></div>
+      <!-- week 3 -->
+      <div class="w-cal-cell"><span class="cell-day">10</span><span class="cell-label">—</span></div>
+      <div class="w-cal-cell"><span class="cell-day">11</span><span class="cell-label">새벽의 보병</span></div>
+      <div class="w-cal-cell"><span class="cell-day">12</span><span class="cell-label">새벽의 보병</span></div>
+      <div class="w-cal-cell"><span class="cell-day">13</span><span class="cell-label">바람의 보행자</span></div>
+      <div class="w-cal-cell"><span class="cell-day">14</span><span class="cell-label">먼지의 사관</span></div>
+      <div class="w-cal-cell"><span class="cell-day">15</span><span class="cell-label">햇살의 기수</span></div>
+      <div class="w-cal-cell"><span class="cell-day">16</span><span class="cell-label">—</span></div>
+      <!-- week 4 -->
+      <div class="w-cal-cell"><span class="cell-day">17</span><span class="cell-label">—</span></div>
+      <div class="w-cal-cell"><span class="cell-day">18</span><span class="cell-label">햇살의 기수</span></div>
+      <div class="w-cal-cell"><span class="cell-day">19</span><span class="cell-label">새벽의 보병</span></div>
+      <div class="w-cal-cell"><span class="cell-day">20</span><span class="cell-label">햇살의 기수</span></div>
+      <div class="w-cal-cell"><span class="cell-day">21</span><span class="cell-label">먼지의 사관</span></div>
+      <div class="w-cal-cell"><span class="cell-day">22</span><span class="cell-label">소나기 견습</span></div>
+      <div class="w-cal-cell"><span class="cell-day">23</span><span class="cell-label">—</span></div>
+      <!-- week 5 -->
+      <div class="w-cal-cell"><span class="cell-day">24</span><span class="cell-label">—</span></div>
+      <div class="w-cal-cell"><span class="cell-day">25</span><span class="cell-label">새벽의 보병</span></div>
+      <div class="w-cal-cell"><span class="cell-day">26</span><span class="cell-label">바람의 보행자</span></div>
+      <div class="w-cal-cell"><span class="cell-day">27</span><span class="cell-label">먼지의 사관</span></div>
+      <div class="w-cal-cell" style="border-color: var(--w-text); border-width: 2px;"><span class="cell-day" style="color:var(--w-text); font-weight:bold">28</span><span class="cell-label">안개 속의 검객</span></div>
+      <div class="w-cal-cell empty"></div>
+      <div class="w-cal-cell empty"></div>
+    </div>
+
+    <!-- bottom nav -->
+    <div class="w-tab-bar">
+      <button><i data-lucide="home" class="w-4 h-4"></i> 오늘</button>
+      <button class="active"><i data-lucide="calendar-days" class="w-4 h-4"></i> 마일리지</button>
+    </div>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>마일리지 화면 — 일자별 칭호 캘린더 + 총합 통계.</p>
+        <ul>
+          <li>트리거: 메인 화면에서 "마일리지" 탭 클릭 또는 직접 URL 접근</li>
+          <li>인터랙션: 월 prev/next 화살표로 다른 달 조회 / 셀 클릭은 1차 미지원 (스트레치) / "오늘로" 버튼으로 메인 복귀</li>
+          <li>전환: "오늘" 탭 클릭 시 메인 복귀. 오늘 일자 셀은 외곽 굵은 테두리로 강조.</li>
+        </ul>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<!-- ───────────────────────────────────── -->
+<!-- Screen 2: 메인 (초기 — 도시 미선택) -->
+<!-- ───────────────────────────────────── -->
+<div id="screen-2" class="screen" data-scenario="scenario-1-initial">
+  <div class="screen-content @container max-w-6xl mx-auto p-6">
+
+    <h2 class="text-lg font-bold mb-5" style="color:var(--w-muted); border-bottom:1px solid var(--w-border); padding-bottom:8px;">
+      메인 (초기) — 도시 미선택
+    </h2>
+
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="text-base font-bold" style="color:var(--w-text)">출근 마일리지</div>
+        <div class="text-xs" style="color:var(--w-muted)">매일 출근을 채점하는 미니 RPG</div>
+      </div>
+      <span class="w-pill"><i data-lucide="calendar" class="w-3 h-3"></i> 2026.05.28</span>
+    </div>
+
+    <div class="mb-4">
+      <div class="text-xs mb-1" style="color:var(--w-muted)">도시</div>
+      <button class="w-select" style="color:var(--w-muted)">
+        <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> 도시를 선택하세요</span>
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <div class="w-card text-center" style="min-height: 200px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px;">
+      <i data-lucide="map-pin" class="w-8 h-8" style="color:var(--w-muted)"></i>
+      <div class="text-sm" style="color:var(--w-muted)">먼저 도시를 선택하면<br/>오늘의 점수가 나옵니다</div>
+    </div>
+
+    <div class="w-tab-bar">
+      <button class="active"><i data-lucide="home" class="w-4 h-4"></i> 오늘</button>
+      <button><i data-lucide="calendar-days" class="w-4 h-4"></i> 마일리지</button>
+    </div>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>최초 진입 — 누적 기록이 없고 도시 선택 전 상태.</p>
+        <ul>
+          <li>트리거: 첫 방문 / 누적 기록이 비어 있을 때</li>
+          <li>인터랙션: 도시 드롭다운 선택 → 카드 자리가 시나리오 1의 점수 카드로 즉시 교체</li>
+          <li>전환: 도시 선택 후 메인(기본) 화면 상태로 자연 전환</li>
+        </ul>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<!-- ───────────────────────────────────── -->
+<!-- Screen 3: 메인 (데이터 fetch 실패) -->
+<!-- ───────────────────────────────────── -->
+<div id="screen-3" class="screen" data-scenario="scenario-5">
+  <div class="screen-content @container max-w-6xl mx-auto p-6">
+
+    <h2 class="text-lg font-bold mb-5" style="color:var(--w-muted); border-bottom:1px solid var(--w-border); padding-bottom:8px;">
+      메인 (데이터 fetch 실패)
+    </h2>
+
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="text-base font-bold" style="color:var(--w-text)">출근 마일리지</div>
+        <div class="text-xs" style="color:var(--w-muted)">매일 출근을 채점하는 미니 RPG</div>
+      </div>
+      <span class="w-pill"><i data-lucide="calendar" class="w-3 h-3"></i> 2026.05.28</span>
+    </div>
+
+    <div class="mb-4">
+      <div class="text-xs mb-1" style="color:var(--w-muted)">도시</div>
+      <button class="w-select">
+        <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> 서울</span>
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <div class="w-error">
+      <i data-lucide="cloud-off" class="w-10 h-10 mx-auto mb-3" style="color:var(--w-muted)"></i>
+      <div class="text-sm mb-1" style="color:var(--w-text)">환경 데이터를 받지 못했어요.</div>
+      <div class="text-xs mb-4" style="color:var(--w-muted)">잠시 후 다시 시도해주세요.</div>
+      <button class="w-btn w-btn-primary"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> 다시 시도</button>
+    </div>
+
+    <div class="w-tab-bar">
+      <button class="active"><i data-lucide="home" class="w-4 h-4"></i> 오늘</button>
+      <button><i data-lucide="calendar-days" class="w-4 h-4"></i> 마일리지</button>
+    </div>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>외부 환경 데이터 호출 실패 — 카드 생성·누적 모두 진행되지 않음.</p>
+        <ul>
+          <li>트리거: 환경 데이터 fetch 타임아웃 또는 비정상 응답</li>
+          <li>인터랙션: "다시 시도" 버튼 → 데이터 재요청. 도시 변경도 가능.</li>
+          <li>전환: 성공하면 시나리오 1의 점수 카드로 전환. 마일리지에는 이 시도가 기록되지 않는다.</li>
+        </ul>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<!-- ───────────────────────────────────── -->
+<!-- Screen 4: 메인 (AI 실패 — 기본 칭호 fallback) -->
+<!-- ───────────────────────────────────── -->
+<div id="screen-4" class="screen" data-scenario="scenario-6">
+  <div class="screen-content @container max-w-6xl mx-auto p-6">
+
+    <h2 class="text-lg font-bold mb-5" style="color:var(--w-muted); border-bottom:1px solid var(--w-border); padding-bottom:8px;">
+      메인 (AI 실패 — 기본 칭호)
+    </h2>
+
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="text-base font-bold" style="color:var(--w-text)">출근 마일리지</div>
+        <div class="text-xs" style="color:var(--w-muted)">매일 출근을 채점하는 미니 RPG</div>
+      </div>
+      <span class="w-pill"><i data-lucide="calendar" class="w-3 h-3"></i> 2026.05.28</span>
+    </div>
+
+    <div class="mb-4">
+      <div class="text-xs mb-1" style="color:var(--w-muted)">도시</div>
+      <button class="w-select">
+        <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> 서울</span>
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <div class="w-card">
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs" style="color:var(--w-muted)">오늘 난이도</span>
+        <span class="text-xs" style="color:var(--w-muted)">서울 · 2026.05.28</span>
+      </div>
+      <div class="w-score mb-3">47</div>
+      <div class="w-divider mb-3"></div>
+      <div class="text-lg font-bold mb-2" style="color:var(--w-text)">역경의 출근자</div>
+      <div class="text-sm leading-relaxed" style="color:var(--w-muted)">
+        오늘도 한 걸음씩, 책상까지 도달한 평범하지만 단단한 출근.
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button class="w-btn w-btn-primary flex-1"><i data-lucide="share-2" class="w-3.5 h-3.5"></i> 카드 공유</button>
+        <button class="w-btn"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>
+
+    <div class="w-tab-bar">
+      <button class="active"><i data-lucide="home" class="w-4 h-4"></i> 오늘</button>
+      <button><i data-lucide="calendar-days" class="w-4 h-4"></i> 마일리지</button>
+    </div>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>AI 생성 실패 — 점수 정상, 칭호·서사는 점수 구간별 기본값으로 대체. 에러 문구는 어디에도 노출되지 않음.</p>
+        <ul>
+          <li>트리거: 환경 데이터는 받았지만 AI 호출이 실패/타임아웃</li>
+          <li>인터랙션: 카드의 모든 상호작용은 시나리오 1과 동일 (공유·새로고침)</li>
+          <li>전환: 다음 진입 시 같은 날이면 동일 fallback 칭호 보존. 다음날 새 점수 시점에 재시도.</li>
+        </ul>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<!-- ───────────────────────────────────── -->
+<!-- Screen 5: 메인 (공유 직후 — 토스트) -->
+<!-- ───────────────────────────────────── -->
+<div id="screen-5" class="screen" data-scenario="scenario-7">
+  <div class="screen-content @container max-w-6xl mx-auto p-6">
+
+    <h2 class="text-lg font-bold mb-5" style="color:var(--w-muted); border-bottom:1px solid var(--w-border); padding-bottom:8px;">
+      메인 (공유 직후 — 토스트)
+    </h2>
+
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="text-base font-bold" style="color:var(--w-text)">출근 마일리지</div>
+        <div class="text-xs" style="color:var(--w-muted)">매일 출근을 채점하는 미니 RPG</div>
+      </div>
+      <span class="w-pill"><i data-lucide="calendar" class="w-3 h-3"></i> 2026.05.28</span>
+    </div>
+
+    <div class="mb-4">
+      <div class="text-xs mb-1" style="color:var(--w-muted)">도시</div>
+      <button class="w-select">
+        <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4"></i> 서울</span>
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <div class="w-card">
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs" style="color:var(--w-muted)">오늘 난이도</span>
+        <span class="text-xs" style="color:var(--w-muted)">서울 · 2026.05.28</span>
+      </div>
+      <div class="w-score mb-3">47</div>
+      <div class="w-divider mb-3"></div>
+      <div class="text-lg font-bold mb-2" style="color:var(--w-text)">안개 속의 검객</div>
+      <div class="text-sm leading-relaxed" style="color:var(--w-muted)">
+        희뿌연 미세먼지를 가르며 7호선 환승역의 인파를 헤쳐, 그대는 오늘도 책상이라는 성에 다다랐다.
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button class="w-btn w-btn-primary flex-1"><i data-lucide="check" class="w-3.5 h-3.5"></i> 복사됨</button>
+        <button class="w-btn"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>
+
+    <div class="w-tab-bar">
+      <button class="active"><i data-lucide="home" class="w-4 h-4"></i> 오늘</button>
+      <button><i data-lucide="calendar-days" class="w-4 h-4"></i> 마일리지</button>
+    </div>
+
+    <div class="w-toast"><i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i> 복사되었어요</div>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>"카드 공유" 클릭 직후 — 클립보드에 카드 5요소(날짜·도시·점수·칭호·서사) 정돈 텍스트가 복사되고 토스트 1~2초 노출.</p>
+        <ul>
+          <li>트리거: 카드의 "카드 공유" 버튼 클릭</li>
+          <li>인터랙션: 토스트 자동 사라짐 / 버튼 라벨 "복사됨" 잠시 유지 후 원래대로</li>
+          <li>전환: 별도 화면 전환 없음 — 같은 메인 위에서 토스트만 추가</li>
+        </ul>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var currentScreen = 0;
+var screenIds = [];
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('screen-' + id).classList.add('active');
+  document.querySelectorAll('nav button[id^="nav-"]').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('nav-' + id).classList.add('active');
+  currentScreen = screenIds.indexOf(id);
+}
+
+function setViewport(mode) {
+  document.body.classList.remove('viewport-mobile', 'viewport-desktop');
+  document.body.classList.add('viewport-' + mode);
+  document.querySelectorAll('.vp-toggle button').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('vp-' + mode).classList.add('active');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('nav button[id^="nav-"]').forEach(function(b) {
+    screenIds.push(parseInt(b.id.replace('nav-', '')));
+  });
+  var first = document.querySelector('nav button[id^="nav-"]');
+  if (first) first.click();
+  lucide.createIcons();
+});
+</script>
+</body>
+</html>
