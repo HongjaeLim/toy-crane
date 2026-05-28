@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays, MapPin, CloudOff } from "lucide-react";
+import { CalendarDays, MapPin, CloudOff, RotateCw } from "lucide-react";
 import { CitySelect } from "./city-select";
 import { ScoreCard } from "./score-card";
 import { CommuteNav } from "./commute-nav";
@@ -63,12 +63,13 @@ export function TodayView() {
     } catch {
       // ignore
     }
+    if (selectedCity) void fetchToday(selectedCity, value); // 생년월일 바꾸면 즉시 반영
   }
 
-  async function fetchToday(cityId: string) {
+  async function fetchToday(cityId: string, birthValue: string = birth) {
     setStatus("loading");
     try {
-      const query = birth ? `?city=${cityId}&birth=${birth}` : `?city=${cityId}`;
+      const query = birthValue ? `?city=${cityId}&birth=${birthValue}` : `?city=${cityId}`;
       const res = await fetch(`/api/commute${query}`);
       if (!res.ok) throw new Error("fetch failed");
       const data = (await res.json()) as CommuteResult;
@@ -80,9 +81,8 @@ export function TodayView() {
   }
 
   function handleSelectCity(cityId: string) {
-    if (todayResult) return; // 같은 날은 첫 기록 잠금 (미결정 a)
     setSelectedCity(cityId);
-    void fetchToday(cityId);
+    void fetchToday(cityId); // 도시 바꾸면 다시 채점 (오늘 카드 갱신)
   }
 
   async function handleShare() {
@@ -94,8 +94,6 @@ export function TodayView() {
       toast.error("복사하지 못했어요. 다시 시도해주세요.");
     }
   }
-
-  const locked = Boolean(todayResult);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-4 py-8">
@@ -117,18 +115,25 @@ export function TodayView() {
           aria-label="생년월일"
           value={birth}
           max={today}
-          disabled={locked}
           onChange={(e) => handleBirthChange(e.target.value)}
         />
       </div>
 
       <div className="mb-4">
         <p className="mb-1 text-xs text-muted-foreground">도시</p>
-        <CitySelect
-          value={locked ? todayResult!.cityId : selectedCity}
-          onChange={handleSelectCity}
-          disabled={locked}
-        />
+        <CitySelect value={selectedCity} onChange={handleSelectCity} />
+        {todayResult && status !== "loading" && (
+          <div className="mt-2 flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => selectedCity && fetchToday(selectedCity)}
+            >
+              <RotateCw data-icon="inline-start" />
+              다시 뽑기
+            </Button>
+          </div>
+        )}
       </div>
 
       {status === "error" ? (
