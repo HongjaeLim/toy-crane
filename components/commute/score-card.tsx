@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Share2,
   Wind,
@@ -14,7 +16,28 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { formatKoreanDate } from "@/lib/date";
+import { portraitUrl } from "@/lib/portrait";
+import { cn } from "@/lib/utils";
 import type { CommuteResult } from "@/types/commute";
+
+function Portrait({ result }: { result: CommuteResult }) {
+  const [state, setState] = useState<"loading" | "loaded" | "error">("loading");
+  if (state === "error") return null;
+  return (
+    <div className="relative overflow-hidden rounded-lg">
+      {state === "loading" && <Skeleton className="aspect-video w-full" />}
+      {/* eslint-disable-next-line @next/next/no-img-element -- 생성형 외부 URL이라 next/image 최적화 부적합 */}
+      <img
+        src={portraitUrl(result)}
+        alt={`${result.title} 캐릭터`}
+        referrerPolicy="no-referrer"
+        className={cn("aspect-video w-full object-cover", state === "loading" && "hidden")}
+        onLoad={() => setState("loaded")}
+        onError={() => setState("error")}
+      />
+    </div>
+  );
+}
 
 interface ScoreCardProps {
   result: CommuteResult;
@@ -26,6 +49,7 @@ export function ScoreCard({ result, onShare }: ScoreCardProps) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-3">
+        <Portrait result={result} />
         <div className="flex items-baseline justify-between text-xs text-muted-foreground">
           <span>오늘 난이도</span>
           <span>
