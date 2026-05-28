@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import type { CommuteResult } from "@/types/commute";
 
 type Status = "idle" | "loading" | "error";
@@ -60,9 +61,14 @@ export function TodayView() {
     void fetchToday(cityId);
   }
 
-  function handleShare() {
+  async function handleShare() {
     if (!todayResult) return;
-    void navigator.clipboard?.writeText(buildShareText(todayResult));
+    try {
+      await navigator.clipboard.writeText(buildShareText(todayResult));
+      toast.success("복사되었어요");
+    } catch {
+      toast.error("복사하지 못했어요. 다시 시도해주세요.");
+    }
   }
 
   const locked = Boolean(todayResult);

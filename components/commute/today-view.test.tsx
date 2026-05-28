@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TodayView } from "./today-view";
 import { todaySeoul, formatKoreanDate } from "@/lib/date";
+import { toast } from "sonner";
 import type { CommuteResult } from "@/types/commute";
+
+vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
 
 const TODAY = todaySeoul();
 const TODAY_KO = formatKoreanDate(TODAY);
@@ -113,5 +116,30 @@ describe("TodayView", () => {
     expect(await screen.findByText("끈기의 출근자")).toBeInTheDocument();
     expect(screen.queryByText(/에러/)).not.toBeInTheDocument();
     expect(screen.queryByText(/실패/)).not.toBeInTheDocument();
+  });
+
+  it("카드 공유 → 5요소 텍스트가 클립보드에 복사되고 확인 토스트", async () => {
+    vi.stubGlobal("fetch", mockFetchOnce(payload()));
+    render(<TodayView />);
+    await selectSeoul();
+    await screen.findByText("47");
+
+    // selectSeoul()의 userEvent.setup()이 자체 clipboard stub을 깔기 때문에
+    // 그 뒤에 mock을 정의해야 한다. fireEvent는 clipboard를 재설치하지 않는다.
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /카드 공유/ }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).toContain(TODAY_KO);
+    expect(copied).toContain("서울");
+    expect(copied).toContain("47");
+    expect(copied).toContain("안개 속의 검객");
+    expect(copied).toContain("희뿌연 미세먼지를 가르며 책상에 다다랐다.");
+    expect(toast.success).toHaveBeenCalledWith("복사되었어요");
   });
 });
