@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Kanban Todo",
-  description: "Kanban board application",
+  title: "출근 마일리지",
+  description: "매일 출근을 환경 데이터로 채점하는 미니 RPG",
 };
 
 export default function RootLayout({

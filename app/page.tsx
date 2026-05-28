@@ -1,5 +1,5 @@
-import { ComponentExample } from "@/components/component-example";
+import { TodayView } from "@/components/commute/today-view";
 
 export default function Page() {
-return <ComponentExample />;
+  return <TodayView />;
 }
