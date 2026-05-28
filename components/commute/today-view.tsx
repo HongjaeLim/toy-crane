@@ -34,6 +34,38 @@ export function buildShareText(r: CommuteResult): string {
   ].join("\n");
 }
 
+// navigator.clipboard가 실패·미지원·hang하는 환경(포커스 상실, 일부 모바일/확장)을
+// 대비해 타임아웃 후 레거시 execCommand로 폴백한다.
+async function copyText(text: string): Promise<boolean> {
+  try {
+    const write = navigator.clipboard?.writeText(text);
+    if (write) {
+      await Promise.race([
+        write,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 1500)),
+      ]);
+      return true;
+    }
+  } catch {
+    // 아래 폴백으로 진행
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function TodayView() {
   const { getResult, saveResult, hydrated } = useMileage();
   const today = todaySeoul();
@@ -87,12 +119,22 @@ export function TodayView() {
 
   async function handleShare() {
     if (!todayResult) return;
-    try {
-      await navigator.clipboard.writeText(buildShareText(todayResult));
-      toast.success("복사되었어요");
-    } catch {
-      toast.error("복사하지 못했어요. 다시 시도해주세요.");
+    const text = buildShareText(todayResult);
+
+    // 모바일 등 지원 환경: 네이티브 공유 시트 (카톡·메시지 등으로 바로 공유)
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "출근 마일리지", text });
+        return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return; // 사용자가 취소
+        // 그 외 실패는 아래 복사로 폴백
+      }
     }
+
+    const ok = await copyText(text);
+    if (ok) toast.success("복사되었어요");
+    else toast.error("복사하지 못했어요. 다시 시도해주세요.");
   }
 
   return (
