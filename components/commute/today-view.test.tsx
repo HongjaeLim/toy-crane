@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { TodayView } from "./today-view";
 import { todaySeoul, formatKoreanDate } from "@/lib/date";
 import { toast } from "sonner";
+import { encodeCard, decodeCard } from "@/lib/share-card";
 import type { CommuteResult } from "@/types/commute";
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
@@ -118,7 +119,7 @@ describe("TodayView", () => {
     expect(screen.queryByText(/실패/)).not.toBeInTheDocument();
   });
 
-  it("카드 공유 → 5요소 텍스트가 클립보드에 복사되고 확인 토스트", async () => {
+  it("카드 공유 → 카드를 재현하는 링크가 복사되고 확인 토스트", async () => {
     vi.stubGlobal("fetch", mockFetchOnce(payload()));
     render(<TodayView />);
     await selectSeoul();
@@ -135,11 +136,26 @@ describe("TodayView", () => {
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const copied = writeText.mock.calls[0][0] as string;
-    expect(copied).toContain(TODAY_KO);
-    expect(copied).toContain("서울");
-    expect(copied).toContain("47");
     expect(copied).toContain("안개 속의 검객");
-    expect(copied).toContain("희뿌연 미세먼지를 가르며 책상에 다다랐다.");
-    expect(toast.success).toHaveBeenCalledWith("복사되었어요");
+    expect(copied).toContain("/?c=");
+    const decoded = decodeCard(copied.split("/?c=")[1]);
+    expect(decoded?.title).toBe("안개 속의 검객");
+    expect(decoded?.score).toBe(47);
+    expect(toast.success).toHaveBeenCalledWith("공유 링크를 복사했어요");
+  });
+
+  it("?c= 링크로 접속하면 공유된 카드를 재현한다", async () => {
+    const shared = payload({ title: "공유된 검객", score: 88 });
+    const param = encodeCard(shared);
+    window.history.pushState({}, "", `/?c=${param}`);
+    vi.stubGlobal("fetch", vi.fn()); // 공유 뷰는 fetch하지 않는다
+    try {
+      render(<TodayView />);
+      expect(await screen.findByText("공유된 검객")).toBeInTheDocument();
+      expect(screen.getByText("88")).toBeInTheDocument();
+      expect(screen.getByText("친구가 공유한 출근 카드")).toBeInTheDocument();
+    } finally {
+      window.history.pushState({}, "", "/");
+    }
   });
 });

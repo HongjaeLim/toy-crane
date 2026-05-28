@@ -14,25 +14,17 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { encodeCard, decodeCard } from "@/lib/share-card";
 import type { CommuteResult } from "@/types/commute";
 
 const BIRTH_KEY = "commute-mileage:birth";
 
 type Status = "idle" | "loading" | "error";
-
-export function buildShareText(r: CommuteResult): string {
-  const fortune = r.fortune ? `${r.fortune.animal}띠 · ${r.fortune.sign}자리\n` : "";
-  return [
-    `[출근 마일리지] ${formatKoreanDate(r.date)} · ${r.cityName}`,
-    `오늘 난이도 ${r.score}`,
-    `${fortune}${r.title}`,
-    r.narrative,
-  ].join("\n");
-}
 
 // navigator.clipboard가 실패·미지원·hang하는 환경(포커스 상실, 일부 모바일/확장)을
 // 대비해 타임아웃 후 레거시 execCommand로 폴백한다.
@@ -74,6 +66,12 @@ export function TodayView() {
   const [selectedCity, setSelectedCity] = useState("");
   const [birth, setBirth] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [sharedCard, setSharedCard] = useState<CommuteResult | null>(null);
+
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("c");
+    if (c) setSharedCard(decodeCard(c));
+  }, []);
 
   useEffect(() => {
     if (todayResult) setSelectedCity(todayResult.cityId);
@@ -117,14 +115,14 @@ export function TodayView() {
     void fetchToday(cityId); // 도시 바꾸면 다시 채점 (오늘 카드 갱신)
   }
 
-  async function handleShare() {
-    if (!todayResult) return;
-    const text = buildShareText(todayResult);
+  async function shareResult(result: CommuteResult) {
+    const url = `${window.location.origin}/?c=${encodeCard(result)}`;
+    const text = `[출근 마일리지] ${result.title} · 난이도 ${result.score}`;
 
-    // 모바일 등 지원 환경: 네이티브 공유 시트 (카톡·메시지 등으로 바로 공유)
+    // 모바일 등 지원 환경: 네이티브 공유 시트 (카톡·메시지 등으로 링크 공유)
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: "출근 마일리지", text });
+        await navigator.share({ title: "출근 마일리지", text, url });
         return;
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return; // 사용자가 취소
@@ -132,9 +130,28 @@ export function TodayView() {
       }
     }
 
-    const ok = await copyText(text);
-    if (ok) toast.success("복사되었어요");
+    const ok = await copyText(`${text}\n${url}`);
+    if (ok) toast.success("공유 링크를 복사했어요");
     else toast.error("복사하지 못했어요. 다시 시도해주세요.");
+  }
+
+  function handleShare() {
+    if (todayResult) void shareResult(todayResult);
+  }
+
+  if (sharedCard) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col px-4 py-8">
+        <header className="mb-4">
+          <h1 className="text-base font-bold">출근 마일리지</h1>
+          <p className="text-xs text-muted-foreground">친구가 공유한 출근 카드</p>
+        </header>
+        <ScoreCard result={sharedCard} onShare={() => void shareResult(sharedCard)} />
+        <Button asChild className="mt-4 w-full">
+          <Link href="/">나도 오늘의 출근 점수 보기</Link>
+        </Button>
+      </main>
+    );
   }
 
   return (
