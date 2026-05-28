@@ -5,18 +5,20 @@ import { computeScore } from "@/lib/score";
 import { generateTitle } from "@/lib/gemini";
 import { fallbackTitle } from "@/lib/title-fallback";
 import { todaySeoul } from "@/lib/date";
-import type { EnvSnapshot, ResultSource } from "@/types/commute";
+import { getFortune } from "@/lib/zodiac";
+import type { EnvSnapshot, Fortune, ResultSource } from "@/types/commute";
 
 async function resolveTitle(params: {
   cityName: string;
   score: number;
   env: EnvSnapshot;
+  fortune: Fortune | null;
 }): Promise<{ title: string; narrative: string; source: ResultSource }> {
   try {
     const ai = await generateTitle(params);
     return { ...ai, source: "ai" };
   } catch {
-    return { ...fallbackTitle(params.score), source: "fallback" };
+    return { ...fallbackTitle(params.score, params.fortune), source: "fallback" };
   }
 }
 
@@ -26,6 +28,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "유효하지 않은 도시입니다." }, { status: 400 });
   }
 
+  const birth = req.nextUrl.searchParams.get("birth");
+  const fortune = birth ? getFortune(birth) : null;
+
   try {
     const env = await fetchEnvSnapshot(city);
     const score = computeScore(env);
@@ -33,6 +38,7 @@ export async function GET(req: NextRequest) {
       cityName: city.name,
       score,
       env,
+      fortune,
     });
 
     return NextResponse.json({
@@ -44,6 +50,7 @@ export async function GET(req: NextRequest) {
       narrative,
       source,
       env,
+      fortune,
     });
   } catch {
     return NextResponse.json(

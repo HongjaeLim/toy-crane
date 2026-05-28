@@ -16,16 +16,20 @@ import {
 } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import type { CommuteResult } from "@/types/commute";
+
+const BIRTH_KEY = "commute-mileage:birth";
 
 type Status = "idle" | "loading" | "error";
 
 export function buildShareText(r: CommuteResult): string {
+  const fortune = r.fortune ? `${r.fortune.animal}띠 · ${r.fortune.sign}자리\n` : "";
   return [
     `[출근 마일리지] ${formatKoreanDate(r.date)} · ${r.cityName}`,
     `오늘 난이도 ${r.score}`,
-    r.title,
+    `${fortune}${r.title}`,
     r.narrative,
   ].join("\n");
 }
@@ -36,16 +40,36 @@ export function TodayView() {
   const todayResult = getResult(today);
 
   const [selectedCity, setSelectedCity] = useState("");
+  const [birth, setBirth] = useState("");
   const [status, setStatus] = useState<Status>("idle");
 
   useEffect(() => {
     if (todayResult) setSelectedCity(todayResult.cityId);
   }, [todayResult]);
 
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(BIRTH_KEY);
+      if (saved) setBirth(saved);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function handleBirthChange(value: string) {
+    setBirth(value);
+    try {
+      window.localStorage.setItem(BIRTH_KEY, value);
+    } catch {
+      // ignore
+    }
+  }
+
   async function fetchToday(cityId: string) {
     setStatus("loading");
     try {
-      const res = await fetch(`/api/commute?city=${cityId}`);
+      const query = birth ? `?city=${cityId}&birth=${birth}` : `?city=${cityId}`;
+      const res = await fetch(`/api/commute${query}`);
       if (!res.ok) throw new Error("fetch failed");
       const data = (await res.json()) as CommuteResult;
       saveResult(data);
@@ -85,6 +109,18 @@ export function TodayView() {
           {formatKoreanDate(today)}
         </span>
       </header>
+
+      <div className="mb-3">
+        <p className="mb-1 text-xs text-muted-foreground">생년월일 (선택 — 띠·별자리 반영)</p>
+        <Input
+          type="date"
+          aria-label="생년월일"
+          value={birth}
+          max={today}
+          disabled={locked}
+          onChange={(e) => handleBirthChange(e.target.value)}
+        />
+      </div>
 
       <div className="mb-4">
         <p className="mb-1 text-xs text-muted-foreground">도시</p>

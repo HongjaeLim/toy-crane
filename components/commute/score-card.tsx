@@ -39,6 +39,12 @@ export function ScoreCard({ result, onShare }: ScoreCardProps) {
 
         <Separator />
 
+        {result.fortune && (
+          <div className="flex gap-1.5">
+            <Badge variant="secondary">{result.fortune.animal}띠</Badge>
+            <Badge variant="secondary">{result.fortune.sign}자리</Badge>
+          </div>
+        )}
         <div className="text-xl font-bold">{result.title}</div>
         <p className="text-sm leading-relaxed text-muted-foreground">
           {result.narrative}

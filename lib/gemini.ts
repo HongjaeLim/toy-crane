@@ -1,4 +1,4 @@
-import type { EnvSnapshot } from "@/types/commute";
+import type { EnvSnapshot, Fortune } from "@/types/commute";
 import type { TitleResult } from "@/lib/title-fallback";
 
 // NOTE: 이 모듈은 route handler(서버)에서만 import된다. GEMINI_API_KEY는
@@ -11,9 +11,13 @@ interface GenerateParams {
   cityName: string;
   score: number;
   env: EnvSnapshot;
+  fortune?: Fortune | null;
 }
 
-function buildPrompt({ cityName, score, env }: GenerateParams): string {
+function buildPrompt({ cityName, score, env, fortune }: GenerateParams): string {
+  const fortuneLine = fortune
+    ? `\n이 사람은 ${fortune.animal}띠, ${fortune.sign}자리다. 칭호와 서사에 이 띠·별자리의 기운을 자연스럽게 녹여 더 개인화하라.`
+    : "";
   return `너는 매일 아침 직장인의 출근을 영웅 서사시로 변환하는 RPG 내레이터다.
 오늘 ${cityName}의 출근 환경(07~10시 평균):
 - 초미세먼지 PM2.5: ${env.pm2_5}
@@ -22,11 +26,11 @@ function buildPrompt({ cityName, score, env }: GenerateParams): string {
 - 풍속: ${env.windSpeed}m/s
 - 자외선 지수: ${env.uvIndex}
 - 기상특보 수준: ${env.severe ? "있음" : "없음"}
-- 종합 출근 난이도 점수: ${score} (높을수록 험난)
+- 종합 출근 난이도 점수: ${score} (높을수록 험난)${fortuneLine}
 
 규칙:
-1. title: 위 환경을 적군으로 본 4~12자 한국어 영웅 칭호. 매번 새로운 어휘로 짓고, 흔한 예시를 그대로 쓰지 마라.
-2. narrative: 출근을 영웅담처럼 묘사한 한 문장(40~70자, 마침표로 끝). 위트있고 약간 과장되게.
+1. title: 위 환경을 적군으로 본 4~14자 한국어 영웅 칭호. 매번 새로운 어휘로 짓고, 흔한 예시를 그대로 쓰지 마라.
+2. narrative: 출근을 영웅담처럼 묘사한 한 문장(40~80자, 마침표로 끝). 위트있고 약간 과장되게.
 3. 점수가 낮으면 평온한 톤, 높으면 비장하고 장엄한 톤으로.
 JSON으로만 답하라.`;
 }

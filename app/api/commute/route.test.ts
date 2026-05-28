@@ -141,6 +141,21 @@ describe("GET /api/commute", () => {
     expect(body.source).toBe("fallback");
   });
 
+  it("birth 파라미터 → 응답에 띠·별자리(fortune)가 포함된다", async () => {
+    vi.stubGlobal("fetch", mockOpenMeteo());
+    const res = await GET(new NextRequest("http://localhost/api/commute?city=seoul&birth=1988-05-28"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.fortune).toEqual({ animal: "용", sign: "쌍둥이" });
+  });
+
+  it("birth 없으면 fortune은 null", async () => {
+    vi.stubGlobal("fetch", mockOpenMeteo());
+    const res = await GET(request("seoul"));
+    const body = await res.json();
+    expect(body.fortune).toBeNull();
+  });
+
   it("일부 시간대 결측(null)이 있어도 점수는 유한한 정수다", async () => {
     const time = isoHours();
     const pm2_5 = time.map((_, i) => (i >= 7 ? null : 30)); // 출근 시간대 전부 null

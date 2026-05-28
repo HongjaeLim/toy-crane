@@ -16,6 +16,11 @@ export interface EnvSnapshot {
 
 export type ResultSource = "ai" | "fallback";
 
+export interface Fortune {
+  animal: string; // 띠
+  sign: string; // 별자리
+}
+
 export interface CommuteResult {
   date: string; // YYYY-MM-DD, Asia/Seoul
   cityId: string;
@@ -25,4 +30,5 @@ export interface CommuteResult {
   narrative: string;
   source: ResultSource;
   env: EnvSnapshot;
+  fortune?: Fortune | null;
 }
