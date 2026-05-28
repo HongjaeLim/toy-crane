@@ -36,7 +36,7 @@ JSON으로만 답하라.`;
 }
 
 export async function generateTitle(params: GenerateParams): Promise<TitleResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
   const res = await fetch(ENDPOINT, {
