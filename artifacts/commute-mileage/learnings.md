@@ -61,6 +61,26 @@ applied: not-yet
 **다시 마주칠 가능성**: 높음 — "외부 API 응답을 as 캐스팅만 하고 신뢰"하는 패턴은 모든 fetch 통합에서 재발. 경계에서 결측·타임아웃 방어를 기본값으로 삼을 것.
 
 ---
+category: tooling
+applied: not-yet
+---
+## 이미지 생성: Gemini 무료 일일 quota 소진 → Pollinations(무료·키 없음)로 전환
+
+**상황**: 후속 기능(칭호별 캐릭터 일러스트). Gemini 이미지 모델(gemini-2.5-flash-image)을 키로 호출하니 429 `GenerateRequestsPerDayPerProjectPerModel-FreeTier` — 무료 티어 일일 이미지 quota가 작고 소진됨. 데모에서 대부분 막힘.
+**판단**: Gemini 이미지 대신 Pollinations.ai(`image.pollinations.ai/prompt/<text>?seed=...`, 무료·키 없음) 채택. 서버 python 검증은 200/image/jpeg/1.3s로 통과. 칭호 해시를 seed로 써서 "같은 칭호=같은 그림, 다른 칭호=다른 그림". Claude는 이미지 생성 불가(텍스트 전용)라 후보 아님.
+**다시 마주칠 가능성**: 높음 — 무료 LLM/이미지 키는 일일·분당 quota가 빡빡. 이미지가 필요하면 키 없는 무료 소스(Pollinations)나 결정적 생성(SVG)을 먼저 고려.
+
+---
+category: code-review
+applied: not-yet
+---
+## 외부 이미지 hotlink 차단 — <img>는 되는데 특정 호스트만 실패 → referrerPolicy
+
+**상황**: Pollinations 이미지가 서버 fetch(python)는 되는데 브라우저 <img>에선 즉시 onerror. picsum·placehold는 정상 → 호스트 특정 문제. referrerPolicy='no-referrer'로 즉시 해결됨(Referer 기반 hotlink 차단이었음).
+**판단**: 외부 생성형 이미지를 <img>로 직접 띄울 때 hotlink 차단이 흔함. `referrerPolicy="no-referrer"`를 기본으로 붙인다. 안 되면 same-origin route handler 프록시가 다음 수단.
+**다시 마주칠 가능성**: 높음 — 무료 이미지/CDN 호스트의 hotlink 보호는 흔하다. "서버는 되는데 브라우저 img만 실패"의 1순위 원인.
+
+---
 category: escalation
 applied: not-yet
 ---
