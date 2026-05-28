@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Share2,
   Wind,
@@ -14,6 +13,7 @@ import {
   Navigation,
   Sun,
   TriangleAlert,
+  Loader2,
 } from "lucide-react";
 import { formatKoreanDate } from "@/lib/date";
 import { portraitUrl } from "@/lib/portrait";
@@ -22,10 +22,22 @@ import type { CommuteResult } from "@/types/commute";
 
 function Portrait({ result }: { result: CommuteResult }) {
   const [state, setState] = useState<"loading" | "loaded" | "error">("loading");
+
+  useEffect(() => {
+    if (state !== "loading") return;
+    const timer = setTimeout(() => setState((s) => (s === "loading" ? "error" : s)), 60000);
+    return () => clearTimeout(timer);
+  }, [state]);
+
   if (state === "error") return null;
   return (
     <div className="relative overflow-hidden rounded-lg">
-      {state === "loading" && <Skeleton className="aspect-video w-full" />}
+      {state === "loading" && (
+        <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-muted text-muted-foreground">
+          <Loader2 className="size-5 animate-spin" />
+          <span className="text-xs">오늘의 캐릭터 생성 중…</span>
+        </div>
+      )}
       {/* eslint-disable-next-line @next/next/no-img-element -- 생성형 외부 URL이라 next/image 최적화 부적합 */}
       <img
         src={portraitUrl(result)}
