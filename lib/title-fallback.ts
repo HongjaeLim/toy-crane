@@ -1,5 +1,3 @@
-import type { ResultSource } from "@/types/commute";
-
 export interface TitleResult {
   title: string;
   narrative: string;
@@ -24,5 +22,3 @@ export function fallbackTitle(score: number): TitleResult {
     narrative: "거센 환경을 정면으로 뚫고 끝내 책상이라는 성에 도달했다.",
   };
 }
-
-export const FALLBACK_SOURCE: ResultSource = "fallback";

@@ -140,4 +140,32 @@ describe("GET /api/commute", () => {
     const body = await res.json();
     expect(body.source).toBe("fallback");
   });
+
+  it("일부 시간대 결측(null)이 있어도 점수는 유한한 정수다", async () => {
+    const time = isoHours();
+    const pm2_5 = time.map((_, i) => (i >= 7 ? null : 30)); // 출근 시간대 전부 null
+    const airBody = { hourly: { time, pm10: fill(time.length, 40), pm2_5 } };
+    const forecastBody = {
+      hourly: {
+        time,
+        precipitation: fill(time.length, 0),
+        wind_speed_10m: fill(time.length, 3),
+        uv_index: fill(time.length, 4),
+        weather_code: fill(time.length, 0),
+      },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL) =>
+        String(url).includes("air-quality")
+          ? new Response(JSON.stringify(airBody), { status: 200 })
+          : new Response(JSON.stringify(forecastBody), { status: 200 }),
+      ),
+    );
+    const res = await GET(request("seoul"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Number.isInteger(body.score)).toBe(true);
+    expect(body.env.pm2_5).toBe(0); // 결측은 0으로 집계
+  });
 });

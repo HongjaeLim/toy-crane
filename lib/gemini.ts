@@ -37,6 +37,7 @@ export async function generateTitle(params: GenerateParams): Promise<TitleResult
 
   const res = await fetch(ENDPOINT, {
     method: "POST",
+    signal: AbortSignal.timeout(8000),
     headers: {
       "Content-Type": "application/json",
       "x-goog-api-key": apiKey,

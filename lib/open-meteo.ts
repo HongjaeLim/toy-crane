@@ -11,26 +11,29 @@ const SEVERE_CODES = new Set([65, 75, 82, 86, 95, 96, 99]);
 
 interface ForecastHourly {
   time: string[];
-  precipitation: number[];
-  wind_speed_10m: number[];
-  uv_index: number[];
+  precipitation: (number | null)[];
+  wind_speed_10m: (number | null)[];
+  uv_index: (number | null)[];
   weather_code: number[];
 }
 
 interface AirHourly {
   time: string[];
-  pm10: number[];
-  pm2_5: number[];
+  pm10: (number | null)[];
+  pm2_5: (number | null)[];
 }
 
 function hourOf(iso: string): number {
   return Number(iso.slice(11, 13));
 }
 
-function avgAtCommuteHours(times: string[], values: number[]): number {
+function avgAtCommuteHours(times: string[], values: (number | null)[]): number {
   const picked: number[] = [];
   for (let i = 0; i < times.length; i++) {
-    if (COMMUTE_HOURS.includes(hourOf(times[i]))) picked.push(values[i]);
+    const v = values?.[i];
+    if (COMMUTE_HOURS.includes(hourOf(times[i])) && typeof v === "number" && Number.isFinite(v)) {
+      picked.push(v);
+    }
   }
   if (picked.length === 0) return 0;
   const sum = picked.reduce((a, b) => a + b, 0);
@@ -42,7 +45,10 @@ export async function fetchEnvSnapshot(city: City): Promise<EnvSnapshot> {
   const forecastUrl = `${FORECAST_URL}?${common}&hourly=precipitation,wind_speed_10m,uv_index,weather_code&wind_speed_unit=ms`;
   const airUrl = `${AIR_QUALITY_URL}?${common}&hourly=pm10,pm2_5`;
 
-  const [forecastRes, airRes] = await Promise.all([fetch(forecastUrl), fetch(airUrl)]);
+  const [forecastRes, airRes] = await Promise.all([
+    fetch(forecastUrl, { signal: AbortSignal.timeout(5000) }),
+    fetch(airUrl, { signal: AbortSignal.timeout(5000) }),
+  ]);
   if (!forecastRes.ok || !airRes.ok) {
     throw new Error("Open-Meteo fetch failed");
   }

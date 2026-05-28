@@ -18,7 +18,11 @@ export function readStore(): MileageStore {
 }
 
 function writeStore(store: MileageStore) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // 프라이빗 브라우징·용량 초과 등 — 세션 내 상태는 유지되므로 무시
+  }
 }
 
 export interface MileageStats {
